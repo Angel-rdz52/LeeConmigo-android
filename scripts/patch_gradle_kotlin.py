@@ -46,7 +46,7 @@ if "kotlin-android" not in app:
 if "kotlin-stdlib" not in app:
     app, n = re.subn(
         r"(dependencies\s*\{)",
-        r"\1\n    implementation \"org.jetbrains.kotlin:kotlin-stdlib:%s\"" % KOTLIN_VERSION,
+        r'\1\n    implementation "org.jetbrains.kotlin:kotlin-stdlib:%s"' % KOTLIN_VERSION,
         app,
         count=1,
     )
