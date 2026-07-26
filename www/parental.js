@@ -39,18 +39,74 @@ function mostrarOpcionesDeCanje(app) {
     const optionsBox = document.getElementById('redeem-options-box');
     const optionsList = document.getElementById('redeem-options-list');
     const title = document.getElementById('redeem-options-title');
-    title.innerText = `${app.label} — elige un tiempo:`;
+    title.innerText = `${app.label} — arma tu tiempo:`;
     optionsList.innerHTML = '';
 
-    (app.options || []).forEach(op => {
+    (app.options || []).forEach((op, idx) => {
+        let cantidad = 1;
         const user = LC.getUser();
-        const alcanza = (user.total_stars || 0) >= op.cost;
-        const btn = document.createElement('button');
-        btn.disabled = !alcanza;
-        btn.className = `w-full p-3 rounded-xl font-bold text-sm flex items-center justify-between ${alcanza ? 'bg-amber-100 hover:bg-amber-200 text-amber-800' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}`;
-        btn.innerHTML = `<span>${op.minutes} min</span><span>⭐ ${op.cost}</span>`;
-        btn.onclick = () => canjear(app, op);
-        optionsList.appendChild(btn);
+        const maxPorEstrellas = Math.max(1, Math.floor((user.total_stars || 0) / op.cost));
+        const TOPE_UNIDADES = 10; // evita desbloqueos absurdamente largos por error de toque
+        const maxCantidad = Math.max(1, Math.min(TOPE_UNIDADES, maxPorEstrellas));
+
+        const card = document.createElement('div');
+        card.className = 'border border-slate-200 rounded-xl p-3 space-y-2';
+        card.innerHTML = `
+            <div class="flex items-center justify-between">
+                <span class="text-xs text-slate-500">Bloque base: ${op.minutes} min por ⭐${op.cost}</span>
+            </div>
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <button class="btn-menos w-9 h-9 rounded-full bg-slate-100 font-bold text-lg">−</button>
+                    <span class="cantidad-label font-bold text-lg w-6 text-center">1</span>
+                    <button class="btn-mas w-9 h-9 rounded-full bg-slate-100 font-bold text-lg">+</button>
+                </div>
+                <div class="text-right">
+                    <p class="total-tiempo font-bold text-slate-800 text-sm"></p>
+                    <p class="total-costo text-amber-700 text-xs font-bold"></p>
+                </div>
+            </div>
+            <button class="btn-confirmar-canje w-full py-2.5 rounded-xl font-bold text-sm"></button>
+        `;
+
+        const cantidadLabel = card.querySelector('.cantidad-label');
+        const totalTiempo = card.querySelector('.total-tiempo');
+        const totalCosto = card.querySelector('.total-costo');
+        const btnConfirmar = card.querySelector('.btn-confirmar-canje');
+
+        function formatearMinutos(mins) {
+            if (mins < 60) return `${mins} min`;
+            const h = Math.floor(mins / 60);
+            const m = mins % 60;
+            return m === 0 ? `${h} h` : `${h} h ${m} min`;
+        }
+
+        function refrescar() {
+            const minutosTotal = op.minutes * cantidad;
+            const costoTotal = op.cost * cantidad;
+            const alcanza = (LC.getUser().total_stars || 0) >= costoTotal;
+
+            cantidadLabel.innerText = cantidad;
+            totalTiempo.innerText = formatearMinutos(minutosTotal);
+            totalCosto.innerText = `⭐ ${costoTotal}`;
+
+            btnConfirmar.disabled = !alcanza;
+            btnConfirmar.innerText = alcanza ? `Canjear ${formatearMinutos(minutosTotal)}` : 'Te faltan estrellas';
+            btnConfirmar.className = `btn-confirmar-canje w-full py-2.5 rounded-xl font-bold text-sm ${alcanza ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-slate-100 text-slate-400 cursor-not-allowed'}`;
+        }
+
+        card.querySelector('.btn-menos').addEventListener('click', () => {
+            cantidad = Math.max(1, cantidad - 1);
+            refrescar();
+        });
+        card.querySelector('.btn-mas').addEventListener('click', () => {
+            cantidad = Math.min(maxCantidad, cantidad + 1);
+            refrescar();
+        });
+        btnConfirmar.addEventListener('click', () => canjear(app, { minutes: op.minutes * cantidad, cost: op.cost * cantidad }));
+
+        refrescar();
+        optionsList.appendChild(card);
     });
 
     optionsBox.classList.remove('hidden');
@@ -96,10 +152,71 @@ function validarPin() {
 
 async function abrirAdminPanel() {
     LC.showScreen('admin');
+    const searchInput = document.getElementById('admin-app-search');
+    if (searchInput) searchInput.value = '';
+    await refrescarEstadoPermisos();
+    await cargarModoPrueba();
+    await renderAdminAppList();
+}
+
+async function refrescarEstadoPermisos() {
     const warning = document.getElementById('admin-permission-warning');
+    if (!warning) return;
     const ok = await AppBlocker.hasPermissions();
     warning.classList.toggle('hidden', ok);
-    await renderAdminAppList();
+}
+
+function pantallaAdminVisible() {
+    const el = document.getElementById('screen-admin');
+    return el && el.classList.contains('screen-active');
+}
+
+// Cuando volvés de Ajustes del sistema (a conceder permisos), Android no recarga
+// la app, solo la reanuda — sin esto, seguía mostrando el aviso de "faltan
+// permisos" hasta forzar detención.
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        if (pantallaAdminVisible()) refrescarEstadoPermisos();
+        revisarCanjeDirigido();
+    }
+});
+window.addEventListener('focus', () => {
+    if (pantallaAdminVisible()) refrescarEstadoPermisos();
+    revisarCanjeDirigido();
+});
+
+/* ================= Canje dirigido desde la pantalla de bloqueo ================= */
+// Cuando el niño toca "Comprar tiempo" en la pantalla de bloqueo nativa,
+// esta función lo manda directo a esa app en Canjear estrellas — sin pasar
+// por el dashboard ni por control parental.
+async function revisarCanjeDirigido() {
+    let pendiente;
+    try {
+        pendiente = await AppBlocker.getPendingRedeem();
+    } catch (e) {
+        return;
+    }
+    const packageName = pendiente && pendiente.packageName;
+    if (!packageName || !LC.getUser()) return;
+
+    await abrirRedeem();
+    const { apps } = await AppBlocker.getBlockedApps();
+    const app = (apps || []).find(a => a.packageName === packageName);
+    if (app) mostrarOpcionesDeCanje(app);
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    // Pequeño margen para que app.js cargue el perfil guardado primero.
+    setTimeout(revisarCanjeDirigido, 200);
+});
+
+/* ================= Modo prueba (unidades en segundos) ================= */
+
+async function cargarModoPrueba() {
+    const checkbox = document.getElementById('admin-test-mode');
+    if (!checkbox) return;
+    const { enabled } = await AppBlocker.getTestMode();
+    checkbox.checked = !!enabled;
 }
 
 async function renderAdminAppList() {
@@ -142,11 +259,29 @@ async function renderAdminAppList() {
         const optionsBox = row.querySelector('.admin-app-options');
         checkbox.addEventListener('change', () => {
             optionsBox.classList.toggle('hidden', !checkbox.checked);
+            actualizarContadorSeleccionadas();
         });
 
         row.dataset.packageName = app.packageName;
         row.dataset.label = app.label;
         list.appendChild(row);
+    });
+
+    actualizarContadorSeleccionadas();
+    filtrarListaAdmin();
+}
+
+function actualizarContadorSeleccionadas() {
+    const total = document.querySelectorAll('#admin-app-list .admin-app-check:checked').length;
+    const el = document.getElementById('admin-selected-count');
+    if (el) el.innerText = `${total} elegida${total === 1 ? '' : 's'}`;
+}
+
+function filtrarListaAdmin() {
+    const q = (document.getElementById('admin-app-search')?.value || '').trim().toLowerCase();
+    document.querySelectorAll('#admin-app-list > div').forEach(row => {
+        const label = (row.dataset.label || '').toLowerCase();
+        row.classList.toggle('hidden', !!q && !label.includes(q));
     });
 }
 
@@ -183,6 +318,7 @@ document.getElementById('btn-admin-pin-submit')?.addEventListener('click', valid
 
 document.getElementById('btn-admin-back')?.addEventListener('click', () => LC.showScreen('dashboard'));
 document.getElementById('btn-admin-save')?.addEventListener('click', guardarConfiguracionAdmin);
+document.getElementById('admin-app-search')?.addEventListener('input', filtrarListaAdmin);
 document.getElementById('btn-request-permissions')?.addEventListener('click', async () => {
     await AppBlocker.requestPermissions();
     const ok = await AppBlocker.hasPermissions();
@@ -194,4 +330,7 @@ document.getElementById('btn-admin-change-pin')?.addEventListener('click', () =>
     localStorage.setItem(PIN_KEY, nuevo);
     document.getElementById('admin-new-pin').value = '';
     alert('PIN actualizado.');
+});
+document.getElementById('admin-test-mode')?.addEventListener('change', async (e) => {
+    await AppBlocker.setTestMode(e.target.checked);
 });

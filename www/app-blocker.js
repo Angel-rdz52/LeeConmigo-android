@@ -33,6 +33,9 @@ const AppBlockerFallback = (() => {
     async requestUsageAccessPermission() { return { granted: true }; },
     async requestOverlayPermission() { return { granted: true }; },
     async startMonitorService() { return { ok: true }; },
+    async getTestMode() { return { enabled: !!JSON.parse(localStorage.getItem('lc_fallback_test_mode') || 'false') }; },
+    async setTestMode(enabled) { localStorage.setItem('lc_fallback_test_mode', JSON.stringify(!!enabled)); return { ok: true }; },
+    async getPendingRedeem() { return { packageName: null }; }, // solo tiene sentido en Android nativo
   };
 })();
 
@@ -69,6 +72,18 @@ const AppBlocker = {
   },
   async startMonitor() {
     if (NATIVE_DISPONIBLE()) return window.Capacitor.Plugins.AppBlocker.startMonitorService();
+  },
+  async getTestMode() {
+    if (NATIVE_DISPONIBLE()) return window.Capacitor.Plugins.AppBlocker.getTestMode();
+    return AppBlockerFallback.getTestMode();
+  },
+  async setTestMode(enabled) {
+    if (NATIVE_DISPONIBLE()) return window.Capacitor.Plugins.AppBlocker.setTestMode({ enabled });
+    return AppBlockerFallback.setTestMode(enabled);
+  },
+  async getPendingRedeem() {
+    if (NATIVE_DISPONIBLE()) return window.Capacitor.Plugins.AppBlocker.getPendingRedeem();
+    return AppBlockerFallback.getPendingRedeem();
   },
 };
 
