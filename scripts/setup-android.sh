@@ -20,10 +20,14 @@ cp native-plugin/android/*.kt "$PKG_PATH/"
 # Ajusta la declaración "package" si tu appId es distinto de com.leeconmigo.app
 sed -i "s/^package com\.leeconmigo\.app/package $APPID/" "$PKG_PATH"/*.kt
 
-# Recursos (por ahora solo device_admin.xml, requerido por Device Admin)
+# Recursos (por ahora solo device_admin.xml e ic_child_mode.xml)
 if [ -d native-plugin/android/res ]; then
   mkdir -p android/app/src/main/res
   cp -r native-plugin/android/res/* android/app/src/main/res/
+  echo "Recursos copiados. Contenido de res/xml y res/drawable ahora:"
+  find android/app/src/main/res/xml android/app/src/main/res/drawable -type f 2>/dev/null
+else
+  echo "ADVERTENCIA: no existe native-plugin/android/res en el repo — device_admin.xml e ic_child_mode.xml no se van a copiar, y el build de Gradle va a fallar buscándolos."
 fi
 
 MAIN_ACTIVITY=$(find android/app/src/main/java -name "MainActivity.java" | head -n1)
