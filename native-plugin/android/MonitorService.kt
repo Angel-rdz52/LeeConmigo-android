@@ -105,7 +105,14 @@ class MonitorService : Service() {
 
     private fun revisarAppEnPrimerPlano() {
         val paquete = appEnPrimerPlano() ?: return
-        if (paquete == packageName) return // no bloquearse a sí misma
+        if (paquete == packageName) {
+            // Estamos en LeeConmigo (o en la pantalla de bloqueo, que es parte
+            // de esta misma app). "Olvidamos" el bloqueo anterior para que, si
+            // el niño vuelve a abrir la app bloqueada, se le muestre de nuevo
+            // la pantalla de bloqueo en vez de asumir que ya se mostró.
+            ultimaAppBloqueadaMostrada = null
+            return
+        }
 
         val lista = listaBloqueadas()
         var appBloqueada: JSONObject? = null
@@ -273,3 +280,4 @@ class MonitorService : Service() {
         const val CANAL_AVISOS_ID = "leeconmigo_avisos"
     }
 }
+
