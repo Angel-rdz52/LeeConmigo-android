@@ -1,0 +1,38 @@
+<!--
+  MANIFEST-ADDITIONS.xml
+  No reemplaza tu AndroidManifest.xml — copia estas líneas dentro de él,
+  en android/app/src/main/AndroidManifest.xml (generado por `npx cap add android`).
+-->
+
+<!-- Van DENTRO de <manifest ...> pero FUERA de <application> -->
+<uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
+    tools:ignore="ProtectedPermissions" />
+<uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+<uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
+    tools:ignore="QueryAllPackagesPermission" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+<uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+<!--
+  Nota: recuerda agregar xmlns:tools="http://schemas.android.com/tools"
+  en la etiqueta raíz <manifest> si no lo tiene ya, para que
+  tools:ignore funcione.
+-->
+
+<!-- Van DENTRO de <application ...>, junto a las demás <activity>/<service> -->
+<service
+    android:name=".MonitorService"
+    android:exported="false"
+    android:foregroundServiceType="specialUse">
+    <property
+        android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+        android:value="Control parental LeeConmigo" />
+</service>
+
+<activity
+    android:name=".LockActivity"
+    android:exported="false"
+    android:launchMode="singleTask"
+    android:theme="@style/Theme.AppCompat.NoActionBar"
+    android:excludeFromRecents="true" />
