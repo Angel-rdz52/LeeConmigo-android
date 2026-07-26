@@ -12,6 +12,8 @@ let currentQuestionIndex = 0;
 let score = 0;
 let startTime = 0;
 let utterance = null;
+let currentSubject = 'lectura';
+let currentHelp = null;
 
 const screens = {
     login: document.getElementById('screen-login'),
@@ -100,8 +102,75 @@ function updateDashboardUi() {
     if (dashLevel) dashLevel.innerText = currentUser.current_level;
     if (dashStars) dashStars.innerText = currentUser.total_stars;
 
-    renderCustomThemes();
+    mostrarRamas();
 }
+
+/* ================= Ramas y temas (Lectura / Matemáticas) ================= */
+
+const RAMAS = {
+    lectura: {
+        label: '📖 Lectura y Comprensión Lectora',
+        temas: [
+            { theme: 'Animales del bosque', label: '🌲 Animales' },
+            { theme: 'Aventuras espaciales', label: '🚀 Aventura' },
+            { theme: 'Ciencia y descubrimientos', label: '🔬 Ciencia' },
+            { theme: 'Amistad y compañerismo', label: '🤝 Amistad' },
+        ]
+    },
+    matematicas: {
+        label: '🔢 Matemáticas',
+        temas: [
+            { theme: 'Tablas de multiplicar', label: '✖️ Tablas de multiplicar' },
+            { theme: 'Sucesiones numéricas', label: '🔗 Sucesiones' },
+            { theme: 'Sumas', label: '➕ Sumas' },
+            { theme: 'Restas', label: '➖ Restas' },
+            { theme: 'Álgebra básica', label: '🧮 Álgebra', secundaria: true },
+            { theme: 'Geometría', label: '📐 Geometría', secundaria: true },
+        ]
+    }
+};
+
+function mostrarRamas() {
+    const selector = document.getElementById('branch-selector');
+    const panel = document.getElementById('tema-panel');
+    if (selector) selector.classList.remove('hidden');
+    if (panel) panel.classList.add('hidden');
+}
+
+function abrirRama(ramaId) {
+    const rama = RAMAS[ramaId];
+    if (!rama) return;
+
+    const selector = document.getElementById('branch-selector');
+    const panel = document.getElementById('tema-panel');
+    if (selector) selector.classList.add('hidden');
+    if (panel) panel.classList.remove('hidden');
+
+    const titulo = document.getElementById('tema-panel-title');
+    if (titulo) titulo.innerText = rama.label;
+
+    const extraLectura = document.getElementById('lectura-extra');
+    if (extraLectura) extraLectura.classList.toggle('hidden', ramaId !== 'lectura');
+
+    const grid = document.getElementById('tema-grid');
+    if (grid) {
+        grid.innerHTML = '';
+        rama.temas.forEach(t => {
+            const btn = document.createElement('button');
+            btn.className = 'theme-btn p-3 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl text-center font-semibold text-indigo-800 transition shadow-sm text-sm';
+            btn.innerHTML = t.label + (t.secundaria ? '<span class="block text-[9px] text-indigo-400 font-normal mt-0.5">(nivel secundaria)</span>' : '');
+            btn.addEventListener('click', () => startReadingSession(t.theme, ramaId));
+            grid.appendChild(btn);
+        });
+    }
+
+    if (ramaId === 'lectura') renderCustomThemes();
+}
+
+document.querySelectorAll('.branch-btn').forEach(btn => {
+    btn.addEventListener('click', () => abrirRama(btn.getAttribute('data-branch')));
+});
+document.getElementById('btn-tema-back')?.addEventListener('click', mostrarRamas);
 
 function renderCustomThemes() {
     const container = document.getElementById('custom-themes-container');
@@ -117,9 +186,9 @@ function renderCustomThemes() {
         btn.className = 'theme-btn p-3 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl text-center font-semibold text-indigo-800 transition shadow-sm text-sm truncate';
         btn.setAttribute('data-theme', themeName);
         btn.innerText = `🎮 ${themeName}`;
-        
+
         btn.addEventListener('click', () => {
-            startReadingSession(`Aventura emocionante basada en ${themeName}`);
+            startReadingSession(`Aventura emocionante basada en ${themeName}`, 'lectura');
         });
 
         container.appendChild(btn);
@@ -141,14 +210,6 @@ function validateThemeSecurity(themeText) {
     }
     return true;
 }
-
-document.querySelectorAll('.theme-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-        if(e.target.closest('#custom-themes-container')) return;
-        const theme = e.target.getAttribute('data-theme');
-        if(theme) startReadingSession(theme);
-    });
-});
 
 const customBtn = document.getElementById('btn-custom-theme');
 if (customBtn) {
@@ -191,21 +252,25 @@ if (customBtn) {
 
         customInput.value = '';
         const adaptedTheme = `Aventura emocionante basada en ${customTheme}`;
-        startReadingSession(adaptedTheme);
+        startReadingSession(adaptedTheme, 'lectura');
     });
 }
 
-async function startReadingSession(theme) {
+async function startReadingSession(theme, subject = 'lectura') {
+    currentSubject = subject;
+    currentHelp = null;
     showScreen('reading');
     const spinner = document.getElementById('loading-spinner');
     const readingContent = document.getElementById('reading-content');
+    const helpBtn = document.getElementById('btn-help-topic');
+    if (helpBtn) helpBtn.classList.add('hidden');
 
     if (spinner) spinner.classList.remove('hidden');
     if (readingContent) readingContent.classList.add('hidden');
 
     try {
         const { data, error } = await supabase.functions.invoke('generate-reading', {
-            body: { age: 8, level: currentUser.current_level, theme: theme }
+            body: { age: 8, level: currentUser.current_level, theme: theme, subject: subject }
         });
 
         if (error) throw new Error("Error de Supabase: " + JSON.stringify(error));
@@ -217,6 +282,9 @@ async function startReadingSession(theme) {
 
         currentStory = data.texto;
         currentQuestions = data.preguntas;
+        currentHelp = data.ayuda || null;
+
+        if (helpBtn) helpBtn.classList.toggle('hidden', !currentHelp);
         
         const storyText = document.getElementById('story-text');
         if (storyText) storyText.innerText = currentStory;
@@ -232,10 +300,30 @@ async function startReadingSession(theme) {
     }
 }
 
+document.getElementById('btn-help-topic')?.addEventListener('click', () => {
+    if (!currentHelp) return;
+    const exp = document.getElementById('help-explicacion');
+    const ejemplo = document.getElementById('help-ejemplo');
+    if (exp) exp.innerText = currentHelp.explicacion || '';
+    if (ejemplo) ejemplo.innerText = currentHelp.ejemplo || '';
+    document.getElementById('help-modal')?.classList.remove('hidden');
+});
+document.getElementById('btn-help-close')?.addEventListener('click', () => {
+    document.getElementById('help-modal')?.classList.add('hidden');
+});
+
 const btnReadAloud = document.getElementById('btn-read-aloud');
 if (btnReadAloud) {
-    btnReadAloud.addEventListener('click', () => {
-        if ('speechSynthesis' in window) {
+    btnReadAloud.addEventListener('click', async () => {
+        const tts = window.Capacitor?.Plugins?.TextToSpeech;
+        if (tts) {
+            try {
+                await tts.stop();
+                await tts.speak({ text: currentStory, lang: 'es-ES', rate: 0.9, pitch: 1.0, volume: 1.0 });
+            } catch (e) {
+                alert("No se pudo reproducir el audio: " + e.message);
+            }
+        } else if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
             utterance = new SpeechSynthesisUtterance(currentStory);
             utterance.lang = 'es-ES';
@@ -250,6 +338,8 @@ if (btnReadAloud) {
 const btnToQuestions = document.getElementById('btn-to-questions');
 if (btnToQuestions) {
     btnToQuestions.addEventListener('click', () => {
+        const tts = window.Capacitor?.Plugins?.TextToSpeech;
+        if (tts) tts.stop();
         if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();
         }
@@ -295,7 +385,7 @@ function renderQuestion() {
             // Insertamos el recordatorio del cuento antes de las opciones
             questionsContainer.insertBefore(storyHelper, document.getElementById('options-container'));
         }
-        storyHelper.innerText = `📖 Cuento: "${currentStory}"`;
+        storyHelper.innerText = `${currentSubject === 'matematicas' ? '📐 Explicación' : '📖 Cuento'}: "${currentStory}"`;
         storyHelper.classList.remove('hidden');
     } else {
         if (storyHelper) {

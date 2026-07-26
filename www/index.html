@@ -76,35 +76,40 @@
                 </div>
 
                 <h3 class="text-md font-bold text-slate-700 mb-3">Elige una categoría:</h3>
-                
-                <div class="grid grid-cols-2 gap-3 mb-3">
-                    <button class="theme-btn p-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl text-center font-semibold text-emerald-800 transition shadow-sm text-sm" data-theme="Animales del bosque">
-                        🌲 Animales
+
+                <div id="branch-selector" class="grid grid-cols-1 gap-3 mb-3">
+                    <button class="branch-btn p-4 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl text-left font-bold text-emerald-800 transition shadow-sm" data-branch="lectura">
+                        📖 Lectura y Comprensión Lectora
                     </button>
-                    <button class="theme-btn p-3 bg-sky-50 hover:bg-sky-100 border border-sky-200 rounded-xl text-center font-semibold text-sky-800 transition shadow-sm text-sm" data-theme="Aventuras espaciales">
-                        🚀 Aventura
-                    </button>
-                    <button class="theme-btn p-3 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-xl text-center font-semibold text-purple-800 transition shadow-sm text-sm" data-theme="Ciencia y descubrimientos">
-                        🔬 Ciencia
-                    </button>
-                    <button class="theme-btn p-3 bg-pink-50 hover:bg-pink-100 border border-pink-200 rounded-xl text-center font-semibold text-pink-800 transition shadow-sm text-sm" data-theme="Amistad y compañerismo">
-                        🤝 Amistad
+                    <button class="branch-btn p-4 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-xl text-left font-bold text-indigo-800 transition shadow-sm" data-branch="matematicas">
+                        🔢 Matemáticas
                     </button>
                 </div>
 
-                <div id="custom-themes-container" class="grid grid-cols-2 gap-3 mb-3"></div>
-
-                <div class="bg-slate-50 border border-slate-200 p-3 rounded-xl">
-                    <div class="flex justify-between items-center mb-1">
-                        <label class="block text-[11px] font-bold text-slate-600">✨ Crea tu tema (Costo: 5 ⭐):</label>
-                        <span class="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full">¡Se guarda!</span>
+                <div id="tema-panel" class="hidden">
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 id="tema-panel-title" class="text-sm font-bold text-slate-600"></h4>
+                        <button id="btn-tema-back" class="text-xs text-indigo-600 font-semibold">← Otra categoría</button>
                     </div>
-                    <div class="flex space-x-2">
-                        <input type="text" id="custom-theme-input" placeholder="Ej. Minecraft, Mario..." 
-                            class="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm bg-white">
-                        <button id="btn-custom-theme" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-sm shadow transition">
-                            Crear 🎮
-                        </button>
+
+                    <div id="tema-grid" class="grid grid-cols-2 gap-3 mb-3"></div>
+
+                    <div id="lectura-extra" class="hidden">
+                        <div id="custom-themes-container" class="grid grid-cols-2 gap-3 mb-3"></div>
+
+                        <div class="bg-slate-50 border border-slate-200 p-3 rounded-xl">
+                            <div class="flex justify-between items-center mb-1">
+                                <label class="block text-[11px] font-bold text-slate-600">✨ Crea tu tema (Costo: 5 ⭐):</label>
+                                <span class="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded-full">¡Se guarda!</span>
+                            </div>
+                            <div class="flex space-x-2">
+                                <input type="text" id="custom-theme-input" placeholder="Ej. Minecraft, Mario..." 
+                                    class="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none text-sm bg-white">
+                                <button id="btn-custom-theme" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg text-sm shadow transition">
+                                    Crear 🎮
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -118,9 +123,14 @@
             <div>
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-lg font-bold text-slate-800">📖 Hora de leer</h2>
-                    <button id="btn-read-aloud" class="px-3 py-1.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-semibold rounded-lg text-sm flex items-center space-x-1 transition">
-                        🔊 <span>Escuchar</span>
-                    </button>
+                    <div class="flex items-center space-x-2">
+                        <button id="btn-help-topic" class="hidden px-3 py-1.5 bg-purple-100 hover:bg-purple-200 text-purple-700 font-bold rounded-lg text-sm">
+                            ❓
+                        </button>
+                        <button id="btn-read-aloud" class="px-3 py-1.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-semibold rounded-lg text-sm flex items-center space-x-1 transition">
+                            🔊 <span>Escuchar</span>
+                        </button>
+                    </div>
                 </div>
 
                 <div id="loading-spinner" class="flex flex-col items-center justify-center py-16 space-y-3">
@@ -203,6 +213,33 @@
                 <button id="btn-request-permissions" class="block mt-2 w-full py-2 bg-red-600 text-white font-bold rounded-lg">Conceder permisos</button>
             </div>
 
+            <div id="admin-battery-warning" class="hidden shrink-0 bg-amber-50 border border-amber-200 text-amber-700 text-xs p-3 rounded-xl mb-2">
+                El sistema puede matar el bloqueo en segundo plano para ahorrar batería.
+                <button id="btn-request-battery" class="block mt-2 w-full py-2 bg-amber-600 text-white font-bold rounded-lg">Desactivar optimización de batería</button>
+            </div>
+
+            <div id="admin-uninstall-warning" class="hidden shrink-0 bg-red-50 border border-red-200 text-red-700 text-xs p-3 rounded-xl mb-2">
+                LeeConmigo se puede desinstalar libremente ahora mismo.
+                <button id="btn-request-device-admin" class="block mt-2 w-full py-2 bg-red-600 text-white font-bold rounded-lg">Activar protección contra desinstalación</button>
+            </div>
+
+            <button id="btn-admin-stop-timer" class="shrink-0 w-full mb-2 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg text-sm flex items-center justify-center gap-2">
+                ⛔ Detener tiempo desbloqueado ahora
+            </button>
+
+            <div class="shrink-0 mb-2 bg-purple-50 border border-purple-200 rounded-xl p-3 text-xs">
+                <p class="font-bold text-purple-800 mb-1">🧒 Modo niño (acceso rápido)</p>
+                <p class="text-purple-700 mb-2">Un ícono en la barra de notificaciones (junto a WiFi/Bluetooth) para bloquear todo al instante. Activarlo no pide nada; desactivarlo pide el PIN.</p>
+                <div class="flex items-center justify-between mb-2">
+                    <span class="font-semibold text-purple-800">Estado: <span id="child-mode-status">—</span></span>
+                    <button id="btn-child-mode-toggle" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg text-xs">Cambiar</button>
+                </div>
+                <button id="btn-add-qs-tile" class="w-full py-2 bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold rounded-lg text-xs">
+                    ➕ Agregar ícono a la barra de accesos rápidos
+                </button>
+                <p class="text-[10px] text-purple-500 mt-1">En Android 12 o anterior: abrí la barra de notificaciones, tocá el lápiz de "editar accesos" y arrastrá "Modo niño" desde la lista — Android no deja que ninguna app lo haga sola por seguridad.</p>
+            </div>
+
             <div class="shrink-0 flex items-center space-x-2 mb-2">
                 <input type="text" id="admin-app-search" placeholder="🔍 Buscar app..."
                     class="flex-1 px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:outline-none">
@@ -232,6 +269,20 @@
         </section>
 
     </main>
+
+    <div id="help-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-6">
+        <div class="bg-white rounded-2xl p-5 max-w-sm w-full space-y-3">
+            <div class="flex justify-between items-center">
+                <h3 class="font-bold text-slate-800">💡 Ayuda con el tema</h3>
+                <button id="btn-help-close" class="text-slate-400 text-xl leading-none">✕</button>
+            </div>
+            <p id="help-explicacion" class="text-sm text-slate-600"></p>
+            <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-3">
+                <p class="text-xs font-bold text-indigo-700 mb-1">Ejemplo:</p>
+                <p id="help-ejemplo" class="text-sm text-indigo-800"></p>
+            </div>
+        </div>
+    </div>
 
     <script src="app-blocker.js"></script>
     <script src="parental.js"></script>

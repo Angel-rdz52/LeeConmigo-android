@@ -35,7 +35,16 @@ const AppBlockerFallback = (() => {
     async startMonitorService() { return { ok: true }; },
     async getTestMode() { return { enabled: !!JSON.parse(localStorage.getItem('lc_fallback_test_mode') || 'false') }; },
     async setTestMode(enabled) { localStorage.setItem('lc_fallback_test_mode', JSON.stringify(!!enabled)); return { ok: true }; },
-    async getPendingRedeem() { return { packageName: null }; }, // solo tiene sentido en Android nativo
+    async getPendingRedeem() { return { packageName: null }; },
+    async hasBatteryOptimizationExemption() { return { granted: true }; },
+    async requestBatteryOptimizationExemption() { return { ok: true }; },
+    async cancelAllUnlocks() { unlocks = {}; localStorage.setItem('lc_fallback_unlocks', JSON.stringify(unlocks)); return { ok: true }; },
+    async isDeviceAdminActive() { return { active: true }; },
+    async requestDeviceAdmin() { return { ok: true }; },
+    async setAdminPin() { return { ok: true }; },
+    async isChildModeActive() { return { active: !!JSON.parse(localStorage.getItem('lc_fallback_child_mode') || 'false') }; },
+    async setChildMode(active) { localStorage.setItem('lc_fallback_child_mode', JSON.stringify(!!active)); return { ok: true }; },
+    async requestAddQuickSettingsTile() { return { supported: false }; },
   };
 })();
 
@@ -84,6 +93,42 @@ const AppBlocker = {
   async getPendingRedeem() {
     if (NATIVE_DISPONIBLE()) return window.Capacitor.Plugins.AppBlocker.getPendingRedeem();
     return AppBlockerFallback.getPendingRedeem();
+  },
+  async hasBatteryExemption() {
+    if (NATIVE_DISPONIBLE()) return window.Capacitor.Plugins.AppBlocker.hasBatteryOptimizationExemption();
+    return AppBlockerFallback.hasBatteryOptimizationExemption();
+  },
+  async requestBatteryExemption() {
+    if (NATIVE_DISPONIBLE()) return window.Capacitor.Plugins.AppBlocker.requestBatteryOptimizationExemption();
+    return AppBlockerFallback.requestBatteryOptimizationExemption();
+  },
+  async cancelAllUnlocks() {
+    if (NATIVE_DISPONIBLE()) return window.Capacitor.Plugins.AppBlocker.cancelAllUnlocks();
+    return AppBlockerFallback.cancelAllUnlocks();
+  },
+  async isDeviceAdminActive() {
+    if (NATIVE_DISPONIBLE()) return window.Capacitor.Plugins.AppBlocker.isDeviceAdminActive();
+    return AppBlockerFallback.isDeviceAdminActive();
+  },
+  async requestDeviceAdmin() {
+    if (NATIVE_DISPONIBLE()) return window.Capacitor.Plugins.AppBlocker.requestDeviceAdmin();
+    return AppBlockerFallback.requestDeviceAdmin();
+  },
+  async setAdminPin(pin) {
+    if (NATIVE_DISPONIBLE()) return window.Capacitor.Plugins.AppBlocker.setAdminPin({ pin });
+    return AppBlockerFallback.setAdminPin();
+  },
+  async isChildModeActive() {
+    if (NATIVE_DISPONIBLE()) return window.Capacitor.Plugins.AppBlocker.isChildModeActive();
+    return AppBlockerFallback.isChildModeActive();
+  },
+  async setChildMode(active) {
+    if (NATIVE_DISPONIBLE()) return window.Capacitor.Plugins.AppBlocker.setChildMode({ active });
+    return AppBlockerFallback.setChildMode(active);
+  },
+  async requestAddQuickSettingsTile() {
+    if (NATIVE_DISPONIBLE()) return window.Capacitor.Plugins.AppBlocker.requestAddQuickSettingsTile();
+    return AppBlockerFallback.requestAddQuickSettingsTile();
   },
 };
 

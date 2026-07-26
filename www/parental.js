@@ -140,6 +140,7 @@ function validarPin() {
     if (!guardado) {
         // Primera vez: el PIN ingresado se convierte en el PIN de control parental.
         localStorage.setItem(PIN_KEY, ingresado);
+        AppBlocker.setAdminPin(ingresado); // se sincroniza también del lado nativo (Modo niño lo necesita)
         abrirAdminPanel();
         return;
     }
@@ -156,14 +157,33 @@ async function abrirAdminPanel() {
     if (searchInput) searchInput.value = '';
     await refrescarEstadoPermisos();
     await cargarModoPrueba();
+    await refrescarEstadoModoNino();
     await renderAdminAppList();
+}
+
+async function refrescarEstadoModoNino() {
+    const label = document.getElementById('child-mode-status');
+    if (!label) return;
+    const { active } = await AppBlocker.isChildModeActive();
+    label.innerText = active ? '🟢 Activo (todo bloqueado)' : '⚪ Apagado';
 }
 
 async function refrescarEstadoPermisos() {
     const warning = document.getElementById('admin-permission-warning');
-    if (!warning) return;
-    const ok = await AppBlocker.hasPermissions();
-    warning.classList.toggle('hidden', ok);
+    if (warning) {
+        const ok = await AppBlocker.hasPermissions();
+        warning.classList.toggle('hidden', ok);
+    }
+    const bateria = document.getElementById('admin-battery-warning');
+    if (bateria) {
+        const { granted } = await AppBlocker.hasBatteryExemption();
+        bateria.classList.toggle('hidden', !!granted);
+    }
+    const desinstalacion = document.getElementById('admin-uninstall-warning');
+    if (desinstalacion) {
+        const { active } = await AppBlocker.isDeviceAdminActive();
+        desinstalacion.classList.toggle('hidden', !!active);
+    }
 }
 
 function pantallaAdminVisible() {
@@ -207,7 +227,10 @@ async function revisarCanjeDirigido() {
 
 window.addEventListener('DOMContentLoaded', () => {
     // Pequeño margen para que app.js cargue el perfil guardado primero.
-    setTimeout(revisarCanjeDirigido, 200);
+    setTimeout(() => {
+        forzarConfiguracionInicial();
+        revisarCanjeDirigido();
+    }, 200);
 });
 
 /* ================= Modo prueba (unidades en segundos) ================= */
@@ -310,13 +333,19 @@ async function guardarConfiguracionAdmin() {
 /* ================= listeners ================= */
 
 document.getElementById('btn-open-redeem')?.addEventListener('click', abrirRedeem);
-document.getElementById('btn-redeem-back')?.addEventListener('click', () => LC.showScreen('dashboard'));
+document.getElementById('btn-redeem-back')?.addEventListener('click', () => {
+    LC.showScreen(LC.getUser() ? 'dashboard' : 'login');
+});
 
 document.getElementById('btn-open-admin')?.addEventListener('click', abrirAdminPin);
-document.getElementById('btn-admin-pin-cancel')?.addEventListener('click', () => LC.showScreen('dashboard'));
+document.getElementById('btn-admin-pin-cancel')?.addEventListener('click', () => {
+    LC.showScreen(LC.getUser() ? 'dashboard' : 'login');
+});
 document.getElementById('btn-admin-pin-submit')?.addEventListener('click', validarPin);
 
-document.getElementById('btn-admin-back')?.addEventListener('click', () => LC.showScreen('dashboard'));
+document.getElementById('btn-admin-back')?.addEventListener('click', () => {
+    LC.showScreen(LC.getUser() ? 'dashboard' : 'login');
+});
 document.getElementById('btn-admin-save')?.addEventListener('click', guardarConfiguracionAdmin);
 document.getElementById('admin-app-search')?.addEventListener('input', filtrarListaAdmin);
 document.getElementById('btn-request-permissions')?.addEventListener('click', async () => {
@@ -328,9 +357,44 @@ document.getElementById('btn-admin-change-pin')?.addEventListener('click', () =>
     const nuevo = document.getElementById('admin-new-pin').value.trim();
     if (!nuevo) return;
     localStorage.setItem(PIN_KEY, nuevo);
+    AppBlocker.setAdminPin(nuevo);
     document.getElementById('admin-new-pin').value = '';
     alert('PIN actualizado.');
 });
 document.getElementById('admin-test-mode')?.addEventListener('change', async (e) => {
     await AppBlocker.setTestMode(e.target.checked);
 });
+document.getElementById('btn-request-battery')?.addEventListener('click', async () => {
+    await AppBlocker.requestBatteryExemption();
+});
+document.getElementById('btn-request-device-admin')?.addEventListener('click', async () => {
+    await AppBlocker.requestDeviceAdmin();
+});
+document.getElementById('btn-child-mode-toggle')?.addEventListener('click', async () => {
+    const { active } = await AppBlocker.isChildModeActive();
+    // Ya estamos dentro del panel admin (autenticado con PIN), así que
+    // apagarlo desde acá no vuelve a pedir el PIN — para eso está el tile.
+    await AppBlocker.setChildMode(!active);
+    await refrescarEstadoModoNino();
+});
+document.getElementById('btn-add-qs-tile')?.addEventListener('click', async () => {
+    const { supported } = await AppBlocker.requestAddQuickSettingsTile();
+    if (!supported) {
+        alert('En esta versión de Android no se puede agregar automáticamente. Abrí la barra de notificaciones, tocá "editar accesos rápidos" y arrastrá "Modo niño" desde la lista.');
+    }
+});
+document.getElementById('btn-admin-stop-timer')?.addEventListener('click', async () => {
+    if (!confirm('¿Bloquear ahora mismo cualquier app que esté desbloqueada con estrellas?')) return;
+    await AppBlocker.cancelAllUnlocks();
+    alert('✅ Listo, se detuvo cualquier tiempo desbloqueado.');
+});
+
+/* ================= Primera apertura: ir directo a Control Parental ================= */
+// Mientras no exista un PIN configurado, consideramos que la app recién se
+// instaló: en vez de mostrar el login del niño, forzamos a que un adulto
+// configure el control parental primero.
+function forzarConfiguracionInicial() {
+    if (!pinGuardado()) {
+        abrirAdminPin();
+    }
+}
