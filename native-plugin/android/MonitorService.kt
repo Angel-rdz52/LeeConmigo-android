@@ -1,8 +1,10 @@
 package com.leeconmigo.app
 
+import android.app.AlarmManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.app.usage.UsageEvents
 import android.app.usage.UsageStatsManager
@@ -12,6 +14,7 @@ import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
+import android.os.SystemClock
 import android.os.VibrationEffect
 import android.os.Vibrator
 import org.json.JSONArray
@@ -51,6 +54,7 @@ class MonitorService : Service() {
         super.onCreate()
         crearCanalesNotificacion()
         startForeground(NOTIF_ID, construirNotificacionBase())
+        programarWatchdog()
         handler.post(loop)
     }
 
@@ -66,6 +70,23 @@ class MonitorService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     private fun prefs() = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
+    /** Red de seguridad: si Android mata este servicio, esta alarma lo revive
+     *  cada ~15 minutos aunque el teléfono esté en reposo profundo (Doze). */
+    private fun programarWatchdog() {
+        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val intent = Intent(this, WatchdogReceiver::class.java)
+        val flags = PendingIntent.FLAG_UPDATE_CURRENT or
+            (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
+        val pendingIntent = PendingIntent.getBroadcast(this, 0, intent, flags)
+
+        alarmManager.setInexactRepeating(
+            AlarmManager.ELAPSED_REALTIME_WAKEUP,
+            SystemClock.elapsedRealtime() + AlarmManager.INTERVAL_FIFTEEN_MINUTES,
+            AlarmManager.INTERVAL_FIFTEEN_MINUTES,
+            pendingIntent
+        )
+    }
 
     private fun modoPrueba() = prefs().getBoolean(KEY_TEST_MODE, false)
 
@@ -130,7 +151,8 @@ class MonitorService : Service() {
 
         val unlocks = JSONObject(prefs().getString(KEY_UNLOCKS, "{}") ?: "{}")
         val hasta = if (unlocks.has(paquete)) unlocks.getLong(paquete) else 0L
-        if (hasta > System.currentTimeMillis()) {
+        val childModeActivo = prefs().getBoolean(KEY_CHILD_MODE, false)
+        if (!childModeActivo && hasta > System.currentTimeMillis()) {
             return // sigue desbloqueada, no hacer nada
         }
 
@@ -151,6 +173,13 @@ class MonitorService : Service() {
      * unidades" una sola vez por desbloqueo.
      */
     private fun actualizarNotificacionYAvisos() {
+        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+        if (prefs().getBoolean(KEY_CHILD_MODE, false)) {
+            manager.notify(NOTIF_ID, construirNotificacionBase("🧒 Modo niño activo — todo bloqueado"))
+            return
+        }
+
         val ahora = System.currentTimeMillis()
         val unlocksJson = prefs().getString(KEY_UNLOCKS, "{}") ?: "{}"
         val unlocks = JSONObject(unlocksJson)
@@ -192,7 +221,6 @@ class MonitorService : Service() {
             prefs().edit().putString(KEY_UNLOCKS, unlocks.toString()).apply()
         }
 
-        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (masCercano != null) {
             val (paquete, restanteMs) = masCercano!!
             val etiqueta = etiquetaDe(paquete, lista)
@@ -280,4 +308,3 @@ class MonitorService : Service() {
         const val CANAL_AVISOS_ID = "leeconmigo_avisos"
     }
 }
-

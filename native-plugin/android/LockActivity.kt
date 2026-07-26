@@ -26,6 +26,7 @@ class LockActivity : AppCompatActivity() {
         )
 
         val appLabel = intent.getStringExtra("appLabel") ?: "esta app"
+        val appPackage = intent.getStringExtra("packageName")
 
         val root = LinearLayout(this)
         root.orientation = LinearLayout.VERTICAL
@@ -48,7 +49,7 @@ class LockActivity : AppCompatActivity() {
         root.addView(titulo)
 
         val subtitulo = TextView(this)
-        subtitulo.text = "Pide a un adulto que use estrellas en LeeConmigo para desbloquearla."
+        subtitulo.text = "Usa tus estrellas en LeeConmigo para desbloquearla."
         subtitulo.textSize = 16f
         subtitulo.setTextColor(Color.parseColor("#D3ECFB"))
         subtitulo.gravity = Gravity.CENTER
@@ -56,23 +57,32 @@ class LockActivity : AppCompatActivity() {
         root.addView(subtitulo)
 
         val boton = Button(this)
-        boton.text = "Abrir LeeConmigo"
-        boton.setOnClickListener {
-            val abrir = packageManager.getLaunchIntentForPackage(packageName)
-            abrir?.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-            if (abrir != null) startActivity(abrir)
-            finish()
-        }
+        boton.text = "⭐ Comprar tiempo con estrellas"
+        boton.setOnClickListener { irAComprarTiempo(appPackage) }
         root.addView(boton)
 
         setContentView(root)
     }
 
-    // Evita salir de la pantalla de bloqueo con el botón "atrás": lo manda al inicio en vez de a la app bloqueada.
-    override fun onBackPressed() {
+    /** Deja marcado en SharedPreferences qué app quiere canjear el niño, y
+     *  vuelve a LeeConmigo — la web lee ese dato al reaparecer y lo manda
+     *  directo a comprar tiempo para esa app, sin pasar por el dashboard
+     *  ni por control parental. */
+    private fun irAComprarTiempo(appPackage: String?) {
+        if (appPackage != null) {
+            getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
+                .putString(KEY_PENDING_REDEEM, appPackage)
+                .apply()
+        }
         val abrir = packageManager.getLaunchIntentForPackage(packageName)
         abrir?.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         if (abrir != null) startActivity(abrir)
         finish()
+    }
+
+    // Evita salir de la pantalla de bloqueo con el botón "atrás": lo manda a
+    // comprar tiempo igual que el botón principal.
+    override fun onBackPressed() {
+        irAComprarTiempo(intent.getStringExtra("packageName"))
     }
 }
