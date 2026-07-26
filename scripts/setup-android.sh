@@ -15,12 +15,16 @@ echo "appId: $APPID"
 echo "Copiando plugin a: $PKG_PATH"
 
 mkdir -p "$PKG_PATH"
-cp native-plugin/android/AppBlockerPlugin.kt "$PKG_PATH/"
-cp native-plugin/android/MonitorService.kt "$PKG_PATH/"
-cp native-plugin/android/LockActivity.kt "$PKG_PATH/"
+cp native-plugin/android/*.kt "$PKG_PATH/"
 
 # Ajusta la declaración "package" si tu appId es distinto de com.leeconmigo.app
-sed -i "s/^package com\.leeconmigo\.app/package $APPID/" "$PKG_PATH"/AppBlockerPlugin.kt "$PKG_PATH"/MonitorService.kt "$PKG_PATH"/LockActivity.kt
+sed -i "s/^package com\.leeconmigo\.app/package $APPID/" "$PKG_PATH"/*.kt
+
+# Recursos (por ahora solo device_admin.xml, requerido por Device Admin)
+if [ -d native-plugin/android/res ]; then
+  mkdir -p android/app/src/main/res
+  cp -r native-plugin/android/res/* android/app/src/main/res/
+fi
 
 MAIN_ACTIVITY=$(find android/app/src/main/java -name "MainActivity.java" | head -n1)
 if [ -z "$MAIN_ACTIVITY" ]; then
