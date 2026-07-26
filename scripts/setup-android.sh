@@ -32,6 +32,11 @@ python3 scripts/patch_main_activity.py "$MAIN_ACTIVITY"
 MANIFEST="android/app/src/main/AndroidManifest.xml"
 python3 scripts/patch_manifest.py "$MANIFEST"
 
+# El proyecto que genera Capacitor por defecto es Java puro: sin esto,
+# Gradle ignora silenciosamente los .kt del plugin y falla al compilar
+# MainActivity con "cannot find symbol".
+python3 scripts/patch_gradle_kotlin.py
+
 echo ""
 echo "Listo. Ahora podés compilar con:"
 echo "  cd android && ./gradlew assembleDebug"
