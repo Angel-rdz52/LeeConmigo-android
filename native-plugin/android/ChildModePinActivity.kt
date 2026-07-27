@@ -1,14 +1,17 @@
 package com.leeconmigo.app
 
+import android.content.ComponentName
 import android.content.Context
 import android.graphics.Color
 import android.os.Bundle
+import android.service.quicksettings.TileService
 import android.text.InputType
 import android.view.Gravity
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import java.security.MessageDigest
 
@@ -50,8 +53,18 @@ class ChildModePinActivity : AppCompatActivity() {
             val hashGuardado = prefs.getString(KEY_ADMIN_PIN_HASH, null)
             val ingresado = input.text.toString().trim()
 
-            if (hashGuardado != null && ingresado.isNotEmpty() && sha256(ingresado) == hashGuardado) {
+            if (hashGuardado == null) {
+                titulo.text = "⚠️ Todavía no hay PIN sincronizado. Abrí LeeConmigo → Control Parental una vez y volvé a intentar."
+            } else if (ingresado.isNotEmpty() && sha256(ingresado) == hashGuardado) {
                 prefs.edit().putBoolean(KEY_CHILD_MODE, false).apply()
+                // Sin esto, el ícono de la barra de accesos rápidos se queda
+                // mostrando "activo" hasta que el usuario vuelve a abrir el
+                // panel de accesos rápidos — esto lo refresca al instante.
+                TileService.requestListeningState(
+                    this,
+                    ComponentName(this, ChildModeTileService::class.java)
+                )
+                Toast.makeText(this, "✅ Modo niño desactivado", Toast.LENGTH_SHORT).show()
                 finish()
             } else {
                 titulo.text = "❌ PIN incorrecto. Intentá de nuevo."
