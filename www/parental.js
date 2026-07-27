@@ -140,11 +140,15 @@ function validarPin() {
     if (!guardado) {
         // Primera vez: el PIN ingresado se convierte en el PIN de control parental.
         localStorage.setItem(PIN_KEY, ingresado);
-        AppBlocker.setAdminPin(ingresado); // se sincroniza también del lado nativo (Modo niño lo necesita)
+        AppBlocker.setAdminPin(ingresado);
         abrirAdminPanel();
         return;
     }
     if (ingresado === guardado) {
+        // Se re-sincroniza en cada entrada correcta — así, si el PIN nativo
+        // alguna vez quedó desactualizado (por ejemplo, instalaciones
+        // anteriores a que existiera el Modo Niño), se autocorrige solo.
+        AppBlocker.setAdminPin(ingresado);
         abrirAdminPanel();
     } else {
         alert('PIN incorrecto.');
