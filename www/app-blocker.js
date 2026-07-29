@@ -75,8 +75,16 @@ const AppBlocker = {
   },
   async requestPermissions() {
     if (NATIVE_DISPONIBLE()) {
-      await window.Capacitor.Plugins.AppBlocker.requestUsageAccessPermission();
-      await window.Capacitor.Plugins.AppBlocker.requestOverlayPermission();
+      // Se piden de a uno: lanzar los dos Intents casi al mismo tiempo hacía
+      // que el usuario solo llegara a ver (y conceder) uno de los dos.
+      const usage = await window.Capacitor.Plugins.AppBlocker.hasUsageAccessPermission();
+      if (!usage.granted) {
+        return window.Capacitor.Plugins.AppBlocker.requestUsageAccessPermission();
+      }
+      const overlay = await window.Capacitor.Plugins.AppBlocker.hasOverlayPermission();
+      if (!overlay.granted) {
+        return window.Capacitor.Plugins.AppBlocker.requestOverlayPermission();
+      }
     }
   },
   async startMonitor() {
