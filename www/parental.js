@@ -380,9 +380,16 @@ document.getElementById('admin-test-mode')?.addEventListener('change', async (e)
 });
 document.getElementById('btn-request-battery')?.addEventListener('click', async () => {
     await AppBlocker.requestBatteryExemption();
+    // Ese diálogo del sistema a veces no hace que la app se "pause y reanude"
+    // como sí pasa con las otras pantallas de permisos, así que el refresco
+    // automático por visibilidad puede no dispararse — lo forzamos aparte.
+    setTimeout(refrescarEstadoPermisos, 1500);
+    setTimeout(refrescarEstadoPermisos, 3500);
 });
 document.getElementById('btn-request-device-admin')?.addEventListener('click', async () => {
     await AppBlocker.requestDeviceAdmin();
+    setTimeout(refrescarEstadoPermisos, 1500);
+    setTimeout(refrescarEstadoPermisos, 3500);
 });
 document.getElementById('btn-child-mode-toggle')?.addEventListener('click', async () => {
     const { active } = await AppBlocker.isChildModeActive();
