@@ -177,6 +177,16 @@ async function refrescarEstadoPermisos() {
     if (warning) {
         const ok = await AppBlocker.hasPermissions();
         warning.classList.toggle('hidden', ok);
+
+        // Estado individual, para que se vea claro cuál falta todavía.
+        if (window.Capacitor?.Plugins?.AppBlocker) {
+            const usage = await window.Capacitor.Plugins.AppBlocker.hasUsageAccessPermission();
+            const overlay = await window.Capacitor.Plugins.AppBlocker.hasOverlayPermission();
+            const elUsage = document.getElementById('status-usage');
+            const elOverlay = document.getElementById('status-overlay');
+            if (elUsage) elUsage.innerText = usage.granted ? '✅' : '❌';
+            if (elOverlay) elOverlay.innerText = overlay.granted ? '✅' : '❌';
+        }
     }
     const bateria = document.getElementById('admin-battery-warning');
     if (bateria) {
@@ -402,3 +412,4 @@ function forzarConfiguracionInicial() {
         abrirAdminPin();
     }
 }
+
