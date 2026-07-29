@@ -208,41 +208,43 @@
                 <button id="btn-admin-back" class="text-sm text-indigo-600 font-semibold">← Volver</button>
             </div>
 
-            <div id="admin-permission-warning" class="hidden shrink-0 bg-red-50 border border-red-200 text-red-700 text-xs p-3 rounded-xl mb-2">
-                Faltan permisos de Android para poder bloquear apps.
-                <p class="mt-2">
-                    <span id="status-usage">⏳</span> Acceso de uso<br>
-                    <span id="status-overlay">⏳</span> Mostrar sobre otras apps
-                </p>
-                <button id="btn-request-permissions" class="block mt-2 w-full py-2 bg-red-600 text-white font-bold rounded-lg">Conceder permisos</button>
-                <p class="text-[10px] mt-1 text-red-500">Si te falta más de uno, tocá el botón, concedé el que se abra, y volvé a tocarlo para el siguiente.</p>
-            </div>
-
-            <div id="admin-battery-warning" class="hidden shrink-0 bg-amber-50 border border-amber-200 text-amber-700 text-xs p-3 rounded-xl mb-2">
-                El sistema puede matar el bloqueo en segundo plano para ahorrar batería.
-                <button id="btn-request-battery" class="block mt-2 w-full py-2 bg-amber-600 text-white font-bold rounded-lg">Desactivar optimización de batería</button>
-            </div>
-
-            <div id="admin-uninstall-warning" class="hidden shrink-0 bg-red-50 border border-red-200 text-red-700 text-xs p-3 rounded-xl mb-2">
-                LeeConmigo se puede desinstalar libremente ahora mismo.
-                <button id="btn-request-device-admin" class="block mt-2 w-full py-2 bg-red-600 text-white font-bold rounded-lg">Activar protección contra desinstalación</button>
-            </div>
-
-            <button id="btn-admin-stop-timer" class="shrink-0 w-full mb-2 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg text-sm flex items-center justify-center gap-2">
-                ⛔ Detener tiempo desbloqueado ahora
-            </button>
-
-            <div class="shrink-0 mb-2 bg-purple-50 border border-purple-200 rounded-xl p-3 text-xs">
-                <p class="font-bold text-purple-800 mb-1">🧒 Modo niño (acceso rápido)</p>
-                <p class="text-purple-700 mb-2">Un ícono en la barra de notificaciones (junto a WiFi/Bluetooth) para bloquear todo al instante. Activarlo no pide nada; desactivarlo pide el PIN.</p>
-                <div class="flex items-center justify-between mb-2">
-                    <span class="font-semibold text-purple-800">Estado: <span id="child-mode-status">—</span></span>
-                    <button id="btn-child-mode-toggle" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg text-xs">Cambiar</button>
+            <div id="admin-notices" class="shrink-0 max-h-52 overflow-y-auto space-y-2 mb-2 pr-1">
+                <div id="admin-permission-warning" class="hidden bg-red-50 border border-red-200 text-red-700 text-xs p-3 rounded-xl">
+                    Faltan permisos de Android para poder bloquear apps.
+                    <p class="mt-2">
+                        <span id="status-usage">⏳</span> Acceso de uso<br>
+                        <span id="status-overlay">⏳</span> Mostrar sobre otras apps
+                    </p>
+                    <button id="btn-request-permissions" class="block mt-2 w-full py-2 bg-red-600 text-white font-bold rounded-lg">Conceder permisos</button>
+                    <p class="text-[10px] mt-1 text-red-500">Si te falta más de uno, tocá el botón, concedé el que se abra, y volvé a tocarlo para el siguiente.</p>
                 </div>
-                <button id="btn-add-qs-tile" class="w-full py-2 bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold rounded-lg text-xs">
-                    ➕ Agregar ícono a la barra de accesos rápidos
+
+                <div id="admin-battery-warning" class="hidden bg-amber-50 border border-amber-200 text-amber-700 text-xs p-3 rounded-xl">
+                    El sistema puede matar el bloqueo en segundo plano para ahorrar batería.
+                    <button id="btn-request-battery" class="block mt-2 w-full py-2 bg-amber-600 text-white font-bold rounded-lg">Desactivar optimización de batería</button>
+                </div>
+
+                <div id="admin-uninstall-warning" class="hidden bg-red-50 border border-red-200 text-red-700 text-xs p-3 rounded-xl">
+                    LeeConmigo se puede desinstalar libremente ahora mismo.
+                    <button id="btn-request-device-admin" class="block mt-2 w-full py-2 bg-red-600 text-white font-bold rounded-lg">Activar protección contra desinstalación</button>
+                </div>
+
+                <button id="btn-admin-stop-timer" class="w-full py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg text-sm flex items-center justify-center gap-2">
+                    ⛔ Detener tiempo desbloqueado ahora
                 </button>
-                <p class="text-[10px] text-purple-500 mt-1">En Android 12 o anterior: abrí la barra de notificaciones, tocá el lápiz de "editar accesos" y arrastrá "Modo niño" desde la lista — Android no deja que ninguna app lo haga sola por seguridad.</p>
+
+                <div class="bg-purple-50 border border-purple-200 rounded-xl p-3 text-xs">
+                    <p class="font-bold text-purple-800 mb-1">🧒 Modo niño (acceso rápido)</p>
+                    <p class="text-purple-700 mb-2">Ícono en la barra de notificaciones para bloquear todo al instante. Activar no pide nada; desactivar pide el PIN.</p>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-semibold text-purple-800">Estado: <span id="child-mode-status">—</span></span>
+                        <button id="btn-child-mode-toggle" class="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-lg text-xs">Cambiar</button>
+                    </div>
+                    <button id="btn-add-qs-tile" class="w-full py-2 bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold rounded-lg text-xs">
+                        ➕ Agregar ícono a la barra de accesos rápidos
+                    </button>
+                    <p class="text-[10px] text-purple-500 mt-1">Android 12 o anterior: deslizá para abrir notificaciones, tocá el lápiz de "editar accesos" y arrastrá "Modo niño" — ninguna app puede hacerlo sola.</p>
+                </div>
             </div>
 
             <div class="shrink-0 flex items-center space-x-2 mb-2">
@@ -256,13 +258,13 @@
                 🧪 Modo prueba: tratar los "minutos" configurados como segundos
             </label>
 
-            <div id="admin-app-list" class="flex-1 min-h-0 overflow-y-auto space-y-2 pr-1"></div>
+            <div id="admin-app-list" class="flex-1 min-h-[160px] overflow-y-auto space-y-2 pr-1"></div>
 
-            <div class="shrink-0 pt-3 space-y-3">
+            <div class="shrink-0 pt-3 space-y-2">
                 <button id="btn-admin-save" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-2">
                     💾 Guardar cambios
                 </button>
-                <div class="border-t border-slate-200 pt-3">
+                <div class="border-t border-slate-200 pt-2">
                     <label class="block text-xs font-bold text-slate-600 mb-1">Cambiar PIN de control parental</label>
                     <div class="flex space-x-2">
                         <input type="password" inputmode="numeric" maxlength="6" id="admin-new-pin" placeholder="Nuevo PIN"
@@ -270,6 +272,7 @@
                         <button id="btn-admin-change-pin" class="px-4 py-2 bg-slate-700 text-white font-bold rounded-lg text-sm">Guardar PIN</button>
                     </div>
                 </div>
+                <p class="text-center text-[10px] text-slate-300">LeeConmigo v0.0.7</p>
             </div>
         </section>
 
