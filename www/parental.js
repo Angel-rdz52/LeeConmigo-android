@@ -14,8 +14,6 @@ function pinGuardado() {
 async function abrirRedeem() {
     LC.showScreen('redeem');
     const list = document.getElementById('redeem-app-list');
-    const optionsBox = document.getElementById('redeem-options-box');
-    optionsBox.classList.add('hidden');
     list.innerHTML = '<p class="text-xs text-slate-400">Cargando...</p>';
 
     const { apps } = await AppBlocker.getBlockedApps();
@@ -27,22 +25,44 @@ async function abrirRedeem() {
 
     list.innerHTML = '';
     apps.forEach(app => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'border border-slate-200 rounded-xl overflow-hidden';
+        wrapper.dataset.packageName = app.packageName;
+
         const btn = document.createElement('button');
-        btn.className = 'w-full flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 transition';
-        btn.innerHTML = `<span class="font-semibold text-slate-700 text-sm">📱 ${app.label}</span><span class="text-xs text-indigo-600 font-bold">Ver opciones ›</span>`;
-        btn.onclick = () => mostrarOpcionesDeCanje(app);
-        list.appendChild(btn);
+        btn.className = 'w-full flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100 transition';
+        btn.innerHTML = `<span class="font-semibold text-slate-700 text-sm">📱 ${app.label}</span><span class="chevron-canje text-xs text-indigo-600 font-bold whitespace-nowrap">Ver opciones ›</span>`;
+
+        const detalle = document.createElement('div');
+        detalle.className = 'detalle-canje hidden p-3 border-t border-slate-200 space-y-2';
+
+        btn.addEventListener('click', () => {
+            const estaAbierto = !detalle.classList.contains('hidden');
+
+            // Acordeón: se cierra cualquier otro que haya quedado abierto.
+            document.querySelectorAll('#redeem-app-list .detalle-canje').forEach(d => d.classList.add('hidden'));
+            document.querySelectorAll('#redeem-app-list .chevron-canje').forEach(c => c.innerText = 'Ver opciones ›');
+
+            if (!estaAbierto) {
+                if (!detalle.dataset.armado) {
+                    armarOpcionesDeCanje(app, detalle);
+                    detalle.dataset.armado = '1';
+                }
+                detalle.classList.remove('hidden');
+                btn.querySelector('.chevron-canje').innerText = 'Ocultar ▲';
+            }
+        });
+
+        wrapper.appendChild(btn);
+        wrapper.appendChild(detalle);
+        list.appendChild(wrapper);
     });
 }
 
-function mostrarOpcionesDeCanje(app) {
-    const optionsBox = document.getElementById('redeem-options-box');
-    const optionsList = document.getElementById('redeem-options-list');
-    const title = document.getElementById('redeem-options-title');
-    title.innerText = `${app.label} — arma tu tiempo:`;
-    optionsList.innerHTML = '';
+function armarOpcionesDeCanje(app, contenedor) {
+    contenedor.innerHTML = `<p class="text-xs font-bold text-slate-500 mb-1">Arma tu tiempo:</p>`;
 
-    (app.options || []).forEach((op, idx) => {
+    (app.options || []).forEach((op) => {
         let cantidad = 1;
         const user = LC.getUser();
         const maxPorEstrellas = Math.max(1, Math.floor((user.total_stars || 0) / op.cost));
@@ -106,10 +126,8 @@ function mostrarOpcionesDeCanje(app) {
         btnConfirmar.addEventListener('click', () => canjear(app, { minutes: op.minutes * cantidad, cost: op.cost * cantidad }));
 
         refrescar();
-        optionsList.appendChild(card);
+        contenedor.appendChild(card);
     });
-
-    optionsBox.classList.remove('hidden');
 }
 
 async function canjear(app, opcion) {
@@ -236,7 +254,10 @@ async function revisarCanjeDirigido() {
     await abrirRedeem();
     const { apps } = await AppBlocker.getBlockedApps();
     const app = (apps || []).find(a => a.packageName === packageName);
-    if (app) mostrarOpcionesDeCanje(app);
+    if (!app) return;
+
+    const fila = document.querySelector(`#redeem-app-list [data-package-name="${packageName}"] > button`);
+    if (fila) fila.click();
 }
 
 window.addEventListener('DOMContentLoaded', () => {
